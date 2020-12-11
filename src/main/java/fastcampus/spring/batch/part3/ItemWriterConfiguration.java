@@ -7,6 +7,7 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
@@ -14,6 +15,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
 
+import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,28 +24,50 @@ public class ItemWriterConfiguration {
 
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
+    private final DataSource dataSource;
 
     public ItemWriterConfiguration(JobBuilderFactory jobBuilderFactory,
-                                   StepBuilderFactory stepBuilderFactory) {
+                                   StepBuilderFactory stepBuilderFactory,
+                                   DataSource dataSource) {
 
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
+        this.dataSource = dataSource;
     }
 
     @Bean
     public Job itemWriterJob() {
         return jobBuilderFactory.get("itemWriterJob")
                 .incrementer(new RunIdIncrementer())
-                .start(itemWriterStep())
+                .start(csvItemWriterStep())
+                .next(jdbcBatchItemWriterStep())
                 .build();
     }
 
     @Bean
-    public Step itemWriterStep() {
-        return stepBuilderFactory.get("itemWriterStep")
+    public Step csvItemWriterStep() {
+        return stepBuilderFactory.get("csvItemWriterStep")
                 .<Person, Person>chunk(10)
                 .reader(itemReader())
                 .writer(csvFileItemWriter())
+                .build();
+    }
+
+    @Bean
+    public Step jdbcBatchItemWriterStep() {
+        return stepBuilderFactory.get("jdbcBatchItemWriterStep")
+                .<Person, Person>chunk(10)
+                .reader(itemReader())
+                .writer(jdbcBatchItemWriter())
+                .build();
+    }
+
+    @Bean // bean으로 생성하는 이유, batch 처리 쿼리 설명
+    ItemWriter<Person> jdbcBatchItemWriter() {
+        return new JdbcBatchItemWriterBuilder<Person>()
+                .dataSource(dataSource)
+                .beanMapped()
+                .sql("insert into person(name, age, address) values(:name, :age, :address)")
                 .build();
     }
 
@@ -69,7 +93,7 @@ public class ItemWriterConfiguration {
     private List<Person> getItems() {
         List<Person> items = new ArrayList<>();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             items.add(new Person(i + 1, "test name" + i, "test age", "test address"));
         }
 
