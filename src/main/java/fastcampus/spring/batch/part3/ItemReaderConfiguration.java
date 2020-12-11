@@ -9,7 +9,10 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.JpaCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.database.builder.JpaCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.context.annotation.Bean;
@@ -89,33 +92,27 @@ public class ItemReaderConfiguration {
     }
 
     private JpaCursorItemReader<Person> jpaCursorItemReader() {
-        JpaCursorItemReader<Person> itemReader = new JpaCursorItemReader<>();
-
-        itemReader.setEntityManagerFactory(entityManagerFactory);
-        itemReader.setQueryString("select p from Person p");
-
-        return itemReader;
+        return new JpaCursorItemReaderBuilder<Person>()
+                .entityManagerFactory(entityManagerFactory)
+                .queryString("select p from Person p")
+                .saveState(false)
+                .build();
     }
 
 
     private JdbcCursorItemReader<Person> jdbcCursorItemReader() {
-        JdbcCursorItemReader<Person> itemReader = new JdbcCursorItemReader<>();
-        itemReader.setDataSource(dataSource);
-        itemReader.setSql("select * from person");
-        itemReader.setRowMapper((rs, rowNum) -> new Person(rs.getInt(1),
-                rs.getString(2),
-                rs.getString(3),
-                rs.getString(4)));
-
-        return itemReader;
+        return new JdbcCursorItemReaderBuilder<Person>()
+                .dataSource(dataSource)
+                .sql("select * from person")
+                .rowMapper((rs, rowNum) -> new Person(rs.getInt(1),
+                        rs.getString(2),
+                        rs.getString(3),
+                        rs.getString(4)))
+                .saveState(false)
+                .build();
     }
 
     private FlatFileItemReader<Person> csvFileItemReader() {
-        FlatFileItemReader<Person> flatFileItemReader = new FlatFileItemReader<>();
-        flatFileItemReader.setEncoding("UTF-8");
-        flatFileItemReader.setResource(new ClassPathResource("test.csv"));
-        flatFileItemReader.setLinesToSkip(1);
-
         DefaultLineMapper<Person> defaultLineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
         tokenizer.setNames("id", "name", "age", "address");
@@ -130,9 +127,13 @@ public class ItemReaderConfiguration {
             return new Person(id, name, age, address);
         });
 
-        flatFileItemReader.setLineMapper(defaultLineMapper);
-
-        return flatFileItemReader;
+        return new FlatFileItemReaderBuilder<Person>()
+                .encoding("UTF-8")
+                .resource(new ClassPathResource("test.csv"))
+                .linesToSkip(1)
+                .lineMapper(defaultLineMapper)
+                .saveState(false)
+                .build();
     }
 
     private ItemWriter<Person> itemWriter() {
