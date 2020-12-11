@@ -104,10 +104,7 @@ public class ItemReaderConfiguration {
         return new JdbcCursorItemReaderBuilder<Person>()
                 .dataSource(dataSource)
                 .sql("select * from person")
-                .rowMapper((rs, rowNum) -> new Person(rs.getInt(1),
-                        rs.getString(2),
-                        rs.getString(3),
-                        rs.getString(4)))
+                .beanRowMapper(Person.class)
                 .saveState(false)
                 .build();
     }
@@ -137,11 +134,9 @@ public class ItemReaderConfiguration {
     }
 
     private ItemWriter<Person> itemWriter() {
-        return items -> {
-            log.info(items.stream()
-                    .map(Person::getName)
-                    .collect(Collectors.joining(", ")));
-        };
+        return items -> log.info(items.stream()
+                .map(Person::getName)
+                .collect(Collectors.joining(", ")));
     }
 
     private List<Person> getItems() {
