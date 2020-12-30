@@ -14,4 +14,4 @@ spring:
         jdbc:
           batch_size: 0
   batch:
-    initialize-schema: always
+    initialize-schema: never

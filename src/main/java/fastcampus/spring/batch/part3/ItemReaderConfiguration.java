@@ -45,7 +45,7 @@ public class ItemReaderConfiguration {
     }
 
     @Bean
-    public Job itemReaderJob() {
+    public Job itemReaderJob() throws Exception {
         return jobBuilderFactory.get("itemReaderJob")
                 .incrementer(new RunIdIncrementer())
                 .start(customItemReaderStep())
@@ -65,8 +65,8 @@ public class ItemReaderConfiguration {
     }
 
     @Bean
-    public Step csvFileStep() {
-        return stepBuilderFactory.get("personStep")
+    public Step csvFileStep() throws Exception {
+        return stepBuilderFactory.get("csvFileStep")
                 .<Person, Person>chunk(100)
                 .reader(csvFileItemReader())
                 .writer(itemWriter())
@@ -74,7 +74,7 @@ public class ItemReaderConfiguration {
     }
 
     @Bean
-    public Step jdbcStep() {
+    public Step jdbcStep() throws Exception {
         return stepBuilderFactory.get("jdbcStep")
                 .<Person, Person>chunk(100)
                 .reader(jdbcCursorItemReader())
@@ -83,7 +83,7 @@ public class ItemReaderConfiguration {
     }
 
     @Bean
-    public Step jpaStep() {
+    public Step jpaStep() throws Exception {
         return stepBuilderFactory.get("jpaStep")
                 .<Person, Person>chunk(100)
                 .reader(jpaCursorItemReader())
@@ -91,25 +91,29 @@ public class ItemReaderConfiguration {
                 .build();
     }
 
-    private JpaCursorItemReader<Person> jpaCursorItemReader() {
-        return new JpaCursorItemReaderBuilder<Person>()
+    private JpaCursorItemReader<Person> jpaCursorItemReader() throws Exception {
+        JpaCursorItemReader<Person> itemReader = new JpaCursorItemReaderBuilder<Person>()
+                .name("jpaCursorItemReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("select p from Person p")
-                .saveState(false)
                 .build();
+        itemReader.afterPropertiesSet();
+        return itemReader;
     }
 
 
-    private JdbcCursorItemReader<Person> jdbcCursorItemReader() {
-        return new JdbcCursorItemReaderBuilder<Person>()
+    private JdbcCursorItemReader<Person> jdbcCursorItemReader() throws Exception {
+        JdbcCursorItemReader<Person> itemReader = new JdbcCursorItemReaderBuilder<Person>()
+                .name("jdbcCursorItemReader")
                 .dataSource(dataSource)
-                .sql("select * from person")
-                .beanRowMapper(Person.class)
-                .saveState(false)
+                .sql("select id, name, age, address from person")
+                .rowMapper((rs, rowNum) -> new Person(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4)))
                 .build();
+        itemReader.afterPropertiesSet();
+        return itemReader;
     }
 
-    private FlatFileItemReader<Person> csvFileItemReader() {
+    private FlatFileItemReader<Person> csvFileItemReader() throws Exception {
         DefaultLineMapper<Person> defaultLineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
         tokenizer.setNames("id", "name", "age", "address");
@@ -124,13 +128,15 @@ public class ItemReaderConfiguration {
             return new Person(id, name, age, address);
         });
 
-        return new FlatFileItemReaderBuilder<Person>()
+        FlatFileItemReader<Person> itemReader = new FlatFileItemReaderBuilder<Person>()
+                .name("csvFileItemReader")
                 .encoding("UTF-8")
                 .resource(new ClassPathResource("test.csv"))
                 .linesToSkip(1)
                 .lineMapper(defaultLineMapper)
-                .saveState(false)
                 .build();
+        itemReader.afterPropertiesSet();
+        return itemReader;
     }
 
     private ItemWriter<Person> itemWriter() {

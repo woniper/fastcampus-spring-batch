@@ -78,7 +78,7 @@ public class ChunkProcessingConfiguration {
             int fromIndex = stepExecution.getReadCount();
             int toIndex = fromIndex + chunkSize;
 
-            if (fromIndex >= 100) {
+            if (fromIndex >= items.size()) {
                 return RepeatStatus.FINISHED;
             }
 
