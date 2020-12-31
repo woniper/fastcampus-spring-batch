@@ -28,4 +28,8 @@ public class Person {
         this.age = age;
         this.address = address;
     }
+
+    public Person(String name, String age, String address) {
+        this(0, name, age, address);
+    }
 }
