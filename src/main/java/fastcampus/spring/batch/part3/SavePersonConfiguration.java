@@ -60,7 +60,7 @@ public class SavePersonConfiguration {
                 .reader(itemReader())
                 .processor(itemProcessor(allowDuplicate))
                 .writer(itemWriter())
-                .listener(new SavePersonListener.SavePersonStepExecutionListener())
+                .listener(new SavePersonListener.SavePersonStepListener())
                 .build();
     }
 

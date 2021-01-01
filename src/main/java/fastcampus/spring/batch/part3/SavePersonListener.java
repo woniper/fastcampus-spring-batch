@@ -4,15 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.StepExecution;
-import org.springframework.batch.core.annotation.AfterJob;
-import org.springframework.batch.core.annotation.AfterStep;
-import org.springframework.batch.core.annotation.BeforeJob;
-import org.springframework.batch.core.annotation.BeforeStep;
+import org.springframework.batch.core.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 public class SavePersonListener {
 
-    public static class SavePersonStepExecutionListener {
+    public static class SavePersonStepListener {
         @BeforeStep
         public void beforeStep(StepExecution stepExecution) {
             log.info("beforeStep");
@@ -21,6 +20,36 @@ public class SavePersonListener {
         @AfterStep
         public void afterStep(StepExecution stepExecution) {
             log.info("afterStep : {}", stepExecution.getWriteCount());
+        }
+
+        @BeforeRead
+        public void beforeRead() {
+            log.info("beforeRead");
+        }
+
+        @BeforeProcess
+        public void beforeProcess() {
+            log.info("beforeProcess");
+        }
+
+        @BeforeWrite
+        public void beforeWrite() {
+            log.info("beforeWrite");
+        }
+
+        @AfterRead
+        public void afterRead(Person person) {
+            log.info("afterRead : {}", person.getName());
+        }
+
+        @AfterProcess
+        public void afterProcess(Person input, Person output) {
+            log.info("afterProcess : {}", input.getName());
+        }
+
+        @AfterWrite
+        public void afterWrite(List<Person> list) {
+            log.info("afterWrite : {}", list.size());
         }
     }
 
