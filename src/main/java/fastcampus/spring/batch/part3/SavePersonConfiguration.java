@@ -16,7 +16,9 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
+import org.springframework.batch.item.support.CompositeItemProcessor;
 import org.springframework.batch.item.support.CompositeItemWriter;
+import org.springframework.batch.item.support.builder.CompositeItemProcessorBuilder;
 import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -61,6 +63,9 @@ public class SavePersonConfiguration {
                 .processor(itemProcessor(allowDuplicate))
                 .writer(itemWriter())
                 .listener(new SavePersonListener.SavePersonStepListener())
+                .faultTolerant()
+                .retryLimit(2)
+                .retry(NotFoundNameException.class)
                 .build();
     }
 
@@ -88,8 +93,21 @@ public class SavePersonConfiguration {
         return itemReader;
     }
 
-    private ItemProcessor<Person, Person> itemProcessor(String allowDuplicate) {
-        return new DuplicateValidationProcessor<>(Person::getName, Boolean.parseBoolean(allowDuplicate));
+    private ItemProcessor<Person, Person> itemProcessor(String allowDuplicate) throws Exception {
+        DuplicateValidationProcessor<Person> duplicateValidationProcessor = new DuplicateValidationProcessor<>(Person::getName, Boolean.parseBoolean(allowDuplicate));
+
+//        ItemProcessor<Person, Person> validationProcessor = item -> {
+//            item.validation();
+//            return item;
+//        };
+
+        CompositeItemProcessor itemProcessor = new CompositeItemProcessorBuilder()
+                .delegates(new PersonValidationRetryProcessor(), duplicateValidationProcessor)
+                .build();
+
+        itemProcessor.afterPropertiesSet();
+
+        return itemProcessor;
     }
 
     private ItemWriter<Person> itemWriter() throws Exception {

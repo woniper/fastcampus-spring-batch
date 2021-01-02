@@ -9,6 +9,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import java.util.Objects;
 
 @Entity
 @NoArgsConstructor
@@ -31,5 +32,15 @@ public class Person {
 
     public Person(String name, String age, String address) {
         this(0, name, age, address);
+    }
+
+    public void validation() {
+        if (Objects.isNull(this.name) || name.isEmpty()) {
+            throw new NotFoundNameException();
+        }
+    }
+
+    public void unknownName() {
+        this.name = "UNKNOWN";
     }
 }
