@@ -6,12 +6,8 @@ import org.springframework.batch.core.JobExecutionListener;
 import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.*;
-import org.springframework.retry.RetryCallback;
-import org.springframework.retry.RetryContext;
-import org.springframework.retry.RetryListener;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class SavePersonListener {
@@ -106,26 +102,6 @@ public class SavePersonListener {
                     .mapToInt(StepExecution::getWriteCount)
                     .sum();
             log.info("annotationAfterJob : {}", sum);
-        }
-    }
-
-    public static class SavePersonRetryListener implements RetryListener {
-
-        private final AtomicInteger count = new AtomicInteger();
-
-        @Override
-        public <T, E extends Throwable> boolean open(RetryContext context, RetryCallback<T, E> callback) {
-            return true;
-        }
-
-        @Override
-        public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-            log.info("close");
-        }
-
-        @Override
-        public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
-            log.info("onError :{}", count.incrementAndGet());
         }
     }
 }
