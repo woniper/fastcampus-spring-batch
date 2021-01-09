@@ -64,8 +64,9 @@ public class SavePersonConfiguration {
                 .writer(itemWriter())
                 .listener(new SavePersonListener.SavePersonStepListener())
                 .faultTolerant()
-                .retryLimit(2)
-                .retry(NotFoundNameException.class)
+                .listener(new SavePersonListener.SavePersonSkipListener())
+                .skip(NotFoundNameException.class)
+                .skipLimit(2)
                 .build();
     }
 
@@ -96,13 +97,13 @@ public class SavePersonConfiguration {
     private ItemProcessor<Person, Person> itemProcessor(String allowDuplicate) throws Exception {
         DuplicateValidationProcessor<Person> duplicateValidationProcessor = new DuplicateValidationProcessor<>(Person::getName, Boolean.parseBoolean(allowDuplicate));
 
-//        ItemProcessor<Person, Person> validationProcessor = item -> {
-//            item.validation();
-//            return item;
-//        };
+        ItemProcessor<Person, Person> validationProcessor = item -> {
+            item.validation();
+            return item;
+        };
 
         CompositeItemProcessor itemProcessor = new CompositeItemProcessorBuilder()
-                .delegates(new PersonValidationRetryProcessor(), duplicateValidationProcessor)
+                .delegates(validationProcessor, duplicateValidationProcessor)
                 .build();
 
         itemProcessor.afterPropertiesSet();

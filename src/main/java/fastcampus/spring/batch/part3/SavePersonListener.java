@@ -3,6 +3,7 @@ package fastcampus.spring.batch.part3;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobExecutionListener;
+import org.springframework.batch.core.SkipListener;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.annotation.*;
 import org.springframework.retry.RetryCallback;
@@ -14,6 +15,27 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class SavePersonListener {
+
+    public static class SavePersonSkipListener implements SkipListener<Person, Person> {
+
+        // @OnSkipInRead
+        @Override
+        public void onSkipInRead(Throwable t) {
+
+        }
+
+        // @OnSkipInProcess
+        @Override
+        public void onSkipInProcess(Person item, Throwable t) {
+            log.info("{}", item);
+        }
+
+        // OnSkipInWrite
+        @Override
+        public void onSkipInWrite(Person item, Throwable t) {
+
+        }
+    }
 
     public static class SavePersonStepListener {
         @BeforeStep
