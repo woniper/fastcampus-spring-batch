@@ -9,17 +9,6 @@ group = 'fastcampus.spring.batch'
 version = '0.0.1-SNAPSHOT'
 sourceCompatibility = '1.8'
 
-jar {
-    manifest {
-        attributes  'Title': 'Spring Batch', 'Version': version, 'Main-Class': 'fastcampus.spring.batch.Application'
-    }
-    archiveName 'SpringBatch.jar'
-    dependsOn configurations.runtime
-    from {
-        configurations.compile.collect {it.isDirectory()? it: zipTree(it)}
-    }
-}
-
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
@@ -32,6 +21,7 @@ repositories {
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
+    implementation 'org.springframework.batch:spring-batch-integration'
     implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     compileOnly 'org.projectlombok:lombok'

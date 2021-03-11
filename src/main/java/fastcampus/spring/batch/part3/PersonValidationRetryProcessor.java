@@ -24,28 +24,37 @@ public class PersonValidationRetryProcessor implements ItemProcessor<Person, Per
     @Override
     public Person process(Person item) throws Exception {
         return this.retryTemplate.execute(context -> {
-            item.validation();
-            return item;
+            // RetryCallback
+            if (item.isNotEmptyName()) {
+                return item;
+            }
+
+            throw new NotFoundNameException();
         }, context -> {
-            item.unknownName();
-            return item;
+            // RecoveryCallback
+            return item.unknownName();
         });
     }
 
     public static class SavePersonRetryListener implements RetryListener {
 
         @Override
-        public <T, E extends Throwable> boolean open(RetryContext context, RetryCallback<T, E> callback) {
-            return true;
+        public <Person, NotFoundNameException extends Throwable> boolean open(RetryContext context,
+                                                                              RetryCallback<Person, NotFoundNameException> callback) {
+            return false;
         }
 
         @Override
-        public <T, E extends Throwable> void close(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+        public <Person, NotFoundNameException extends Throwable> void close(RetryContext context,
+                                                                            RetryCallback<Person, NotFoundNameException> callback,
+                                                                            Throwable throwable) {
             log.info("close");
         }
 
         @Override
-        public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+        public <Person, NotFoundNameException extends Throwable> void onError(RetryContext context,
+                                                                              RetryCallback<Person, NotFoundNameException> callback,
+                                                                              Throwable throwable) {
             log.info("onError");
         }
     }

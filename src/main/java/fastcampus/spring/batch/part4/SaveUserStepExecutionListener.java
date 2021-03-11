@@ -1,8 +1,7 @@
-package fastcampus.spring.batch.save;
+package fastcampus.spring.batch.part4;
 
 import fastcampus.spring.batch.UserRepository;
 import lombok.extern.slf4j.Slf4j;
-import fastcampus.spring.batch.User;
 import org.springframework.batch.core.ExitStatus;
 import org.springframework.batch.core.StepExecution;
 import org.springframework.batch.core.StepExecutionListener;
@@ -26,6 +25,7 @@ public class SaveUserStepExecutionListener implements StepExecutionListener {
         List<User> users = userRepository.findAll();
         log.info("saved user size : {}", users.size());
 
-        return ExitStatus.COMPLETED;
+        return stepExecution.getExitStatus();
     }
+
 }

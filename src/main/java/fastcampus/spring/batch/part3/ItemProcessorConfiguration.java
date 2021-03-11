@@ -9,11 +9,11 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.batch.item.support.builder.CompositeItemProcessorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Configuration
@@ -33,33 +33,37 @@ public class ItemProcessorConfiguration {
     public Job itemProcessorJob() {
         return jobBuilderFactory.get("itemProcessorJob")
                 .incrementer(new RunIdIncrementer())
-                .start(compositeItemProcessorStep())
+                .start(itemProcessorStep())
                 .build();
     }
 
     @Bean
-    public Step compositeItemProcessorStep() {
-        return stepBuilderFactory.get("compositeItemProcessorStep")
-                .<String, Integer>chunk(1)
+    public Step itemProcessorStep() {
+        return stepBuilderFactory.get("itemProcessorStep")
+                .<Person, Person>chunk(10)
                 .reader(itemReader())
-                .processor(new CompositeItemProcessorBuilder<String, Integer>()
-                        .delegates(itemProcessor(), itemProcessor2())
-                        .build())
+                .processor(itemProcessor())
                 .writer(itemWriter())
                 .build();
     }
 
-    private ItemReader<String> itemReader() {
-        return new CustomItemReader<>(Arrays.asList("1", "12", "123", "1234"));
+    private ItemReader<Person> itemReader() {
+        return new CustomItemReader<>(getItems());
     }
 
-    private ItemProcessor<String, Integer> itemProcessor() {
-        return String::length;
+    private List<Person> getItems() {
+        List<Person> items = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            items.add(new Person(i + 1,"test name" + i, "test age", "test address"));
+        }
+
+        return items;
     }
 
-    private ItemProcessor<Integer, Integer> itemProcessor2() {
+    private ItemProcessor<Person, Person> itemProcessor() {
         return item -> {
-            if (item % 2 == 0) {
+            if (item.getId() % 2 == 0) {
                 return item;
             }
 
@@ -67,8 +71,8 @@ public class ItemProcessorConfiguration {
         };
     }
 
-    private ItemWriter<Integer> itemWriter() {
-        return items -> items.forEach(x -> log.info(">>>>>>>>>>>>>>>>> " + x));
+    private ItemWriter<Person> itemWriter() {
+        return items -> items.forEach(x -> log.info("PERSON.ID : {}", x.getId()));
     }
 }
 

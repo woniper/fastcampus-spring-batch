@@ -31,16 +31,18 @@ public class Person {
     }
 
     public Person(String name, String age, String address) {
-        this(0, name, age, address);
+        this.id = 0;
+        this.name = name;
+        this.age = age;
+        this.address = address;
     }
 
-    public void validation() {
-        if (Objects.isNull(this.name) || name.isEmpty()) {
-            throw new NotFoundNameException();
-        }
+    public boolean isNotEmptyName() {
+        return Objects.nonNull(this.name) && !name.isEmpty();
     }
 
-    public void unknownName() {
+    public Person unknownName() {
         this.name = "UNKNOWN";
+        return this;
     }
 }

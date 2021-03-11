@@ -1,4 +1,4 @@
-package fastcampus.spring.batch;
+package fastcampus.spring.batch.part5;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -21,10 +21,6 @@ public class Orders {
     private int amount;
 
     private LocalDate createdDate;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
 
     @Builder
     private Orders(String itemName, int amount, LocalDate createdDate) {

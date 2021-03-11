@@ -7,14 +7,19 @@ import org.springframework.batch.core.configuration.annotation.StepBuilderFactor
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
+import org.springframework.batch.item.database.JpaItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JpaItemWriterBuilder;
+import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
@@ -28,30 +33,33 @@ public class ItemWriterConfiguration {
     private final StepBuilderFactory stepBuilderFactory;
     private final DataSource dataSource;
     private final EntityManagerFactory entityManagerFactory;
+    private final PlatformTransactionManager transactionManager;
 
     public ItemWriterConfiguration(JobBuilderFactory jobBuilderFactory,
                                    StepBuilderFactory stepBuilderFactory,
                                    DataSource dataSource,
-                                   EntityManagerFactory entityManagerFactory) {
+                                   EntityManagerFactory entityManagerFactory,
+                                   PlatformTransactionManager transactionManager) {
 
         this.jobBuilderFactory = jobBuilderFactory;
         this.stepBuilderFactory = stepBuilderFactory;
         this.dataSource = dataSource;
         this.entityManagerFactory = entityManagerFactory;
+        this.transactionManager = transactionManager;
     }
 
     @Bean
-    public Job itemWriterJob() {
+    public Job itemWriterJob() throws Exception {
         return jobBuilderFactory.get("itemWriterJob")
                 .incrementer(new RunIdIncrementer())
-                .start(csvItemWriterStep())
-                .next(jdbcBatchItemWriterStep())
-                .next(jpaItemWriterStep())
+//                .start(csvItemWriterStep())
+//                .next(jdbcBatchItemWriterStep())
+                .start(jpaItemWriterStep())
                 .build();
     }
 
     @Bean
-    public Step jpaItemWriterStep() {
+    public Step jpaItemWriterStep() throws Exception {
         return stepBuilderFactory.get("jpaItemWriterStep")
                 .<Person, Person>chunk(10)
                 .reader(itemReader())
@@ -60,7 +68,7 @@ public class ItemWriterConfiguration {
     }
 
     @Bean
-    public Step csvItemWriterStep() {
+    public Step csvItemWriterStep() throws Exception {
         return stepBuilderFactory.get("csvItemWriterStep")
                 .<Person, Person>chunk(10)
                 .reader(itemReader())
@@ -77,23 +85,26 @@ public class ItemWriterConfiguration {
                 .build();
     }
 
-    @Bean // bean으로 생성하는 이유, batch 처리 쿼리 설명
-    ItemWriter<Person> jdbcBatchItemWriter() {
-        return new JdbcBatchItemWriterBuilder<Person>()
+    private ItemWriter<Person> jdbcBatchItemWriter() {
+        JdbcBatchItemWriter<Person> itemWriter = new JdbcBatchItemWriterBuilder<Person>()
                 .dataSource(dataSource)
-                .beanMapped()
+                .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
                 .sql("insert into person(name, age, address) values(:name, :age, :address)")
                 .build();
+        itemWriter.afterPropertiesSet();
+        return itemWriter;
     }
 
-    private ItemWriter<Person> jpaItemWriter() {
-        return new JpaItemWriterBuilder<Person>()
+    private ItemWriter<Person> jpaItemWriter() throws Exception {
+        JpaItemWriter<Person> itemWriter = new JpaItemWriterBuilder<Person>()
                 .entityManagerFactory(entityManagerFactory)
-//                .usePersist(true) 설명
+                .usePersist(true) // 설명
                 .build();
+        itemWriter.afterPropertiesSet();
+        return itemWriter;
     }
 
-    private ItemWriter<Person> csvFileItemWriter() {
+    private ItemWriter<Person> csvFileItemWriter() throws Exception {
         BeanWrapperFieldExtractor<Person> fieldExtractor = new BeanWrapperFieldExtractor<>();
         fieldExtractor.setNames(new String[] {"id", "name", "age", "address"});
 
@@ -101,11 +112,18 @@ public class ItemWriterConfiguration {
         lineAggregator.setDelimiter(",");
         lineAggregator.setFieldExtractor(fieldExtractor);
 
-        return new FlatFileItemWriterBuilder<Person>()
+        FlatFileItemWriter<Person> itemWriter = new FlatFileItemWriterBuilder<Person>()
                 .resource(new FileSystemResource("output/test-output.csv"))
                 .lineAggregator(lineAggregator)
                 .name("csvFileItemWriter")
+                .encoding("UTF-8")
+                .headerCallback(writer -> writer.write("id,이름,나이,거주지"))
+                .footerCallback(writer -> writer.write("-----------\n"))
+                .append(true)
                 .build();
+        itemWriter.afterPropertiesSet();
+
+        return itemWriter;
     }
 
     private ItemReader<Person> itemReader() {
@@ -116,7 +134,7 @@ public class ItemWriterConfiguration {
         List<Person> items = new ArrayList<>();
 
         for (int i = 0; i < 100; i++) {
-            items.add(new Person(i + 1, "test name" + i, "test age", "test address"));
+            items.add(new Person("test name" + i, "test age", "test address"));
         }
 
         return items;

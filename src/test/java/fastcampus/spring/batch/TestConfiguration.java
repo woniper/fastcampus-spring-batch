@@ -1,4 +1,4 @@
-package fastcampus.spring.batch.part3;
+package fastcampus.spring.batch;
 
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.test.JobLauncherTestUtils;

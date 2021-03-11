@@ -62,11 +62,11 @@ public class SavePersonConfiguration {
                 .reader(itemReader())
                 .processor(itemProcessor(allowDuplicate))
                 .writer(itemWriter())
-                .listener(new SavePersonListener.SavePersonStepListener())
+//                .listener(new SavePersonListener.SavePersonStepListener())
                 .faultTolerant()
-                .listener(new SavePersonListener.SavePersonSkipListener())
                 .skip(NotFoundNameException.class)
                 .skipLimit(3)
+                .listener(new SavePersonListener.SavePersonSkipListener())
                 .build();
     }
 
@@ -83,14 +83,13 @@ public class SavePersonConfiguration {
 
         FlatFileItemReader<Person> itemReader = new FlatFileItemReaderBuilder<Person>()
                 .name("savePersonItemReader")
-                .linesToSkip(1)
                 .encoding("UTF-8")
+                .linesToSkip(1)
                 .resource(new ClassPathResource("person.csv"))
                 .lineMapper(lineMapper)
                 .build();
 
         itemReader.afterPropertiesSet();
-
         return itemReader;
     }
 
@@ -98,8 +97,11 @@ public class SavePersonConfiguration {
         DuplicateValidationProcessor<Person> duplicateValidationProcessor = new DuplicateValidationProcessor<>(Person::getName, Boolean.parseBoolean(allowDuplicate));
 
         ItemProcessor<Person, Person> validationProcessor = item -> {
-            item.validation();
-            return item;
+            if (item.isNotEmptyName()) {
+                return item;
+            }
+
+            throw new NotFoundNameException();
         };
 
         CompositeItemProcessor<Person, Person> itemProcessor = new CompositeItemProcessorBuilder()

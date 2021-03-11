@@ -58,7 +58,7 @@ public class ItemReaderConfiguration {
     @Bean
     public Step customItemReaderStep() {
         return stepBuilderFactory.get("customItemReaderStep")
-                .<Person, Person>chunk(100)
+                .<Person, Person>chunk(10)
                 .reader(new CustomItemReader<>(getItems()))
                 .writer(itemWriter())
                 .build();
@@ -67,7 +67,7 @@ public class ItemReaderConfiguration {
     @Bean
     public Step csvFileStep() throws Exception {
         return stepBuilderFactory.get("csvFileStep")
-                .<Person, Person>chunk(100)
+                .<Person, Person>chunk(10)
                 .reader(csvFileItemReader())
                 .writer(itemWriter())
                 .build();
@@ -85,7 +85,7 @@ public class ItemReaderConfiguration {
     @Bean
     public Step jpaStep() throws Exception {
         return stepBuilderFactory.get("jpaStep")
-                .<Person, Person>chunk(100)
+                .<Person, Person>chunk(10)
                 .reader(jpaCursorItemReader())
                 .writer(itemWriter())
                 .build();
@@ -117,13 +117,12 @@ public class ItemReaderConfiguration {
         DefaultLineMapper<Person> defaultLineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
         tokenizer.setNames("id", "name", "age", "address");
-
         defaultLineMapper.setLineTokenizer(tokenizer);
         defaultLineMapper.setFieldSetMapper(fieldSet -> {
-            int id = fieldSet.readInt(0);
-            String name = fieldSet.readString(1);
-            String age = fieldSet.readString(2);
-            String address = fieldSet.readString(3);
+            int id = fieldSet.readInt("id");
+            String name = fieldSet.readString("name");
+            String age = fieldSet.readString("age");
+            String address = fieldSet.readString("address");
 
             return new Person(id, name, age, address);
         });

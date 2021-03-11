@@ -1,5 +1,6 @@
 package fastcampus.spring.batch.part3;
 
+import fastcampus.spring.batch.TestConfiguration;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,7 +49,7 @@ public class SavePersonConfigurationTest {
                 .isEqualTo(3);
 
         assertThat(personRepository.count())
-                .isEqualTo(3L);
+                .isEqualTo(3);
     }
 
     @Test
@@ -68,7 +69,7 @@ public class SavePersonConfigurationTest {
                 .isEqualTo(100);
 
         assertThat(personRepository.count())
-                .isEqualTo(100L);
+                .isEqualTo(100);
     }
 
     @Test
@@ -81,6 +82,6 @@ public class SavePersonConfigurationTest {
                 .isEqualTo(3);
 
         assertThat(personRepository.count())
-                .isEqualTo(3L);
+                .isEqualTo(3);
     }
 }

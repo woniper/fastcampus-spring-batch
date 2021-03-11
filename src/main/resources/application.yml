@@ -9,3 +9,13 @@ spring:
   batch:
     job:
       names: ${job.name:NONE}
+
+#logging:
+#  level:
+#    org:
+#      hibernate:
+#        type: TRACE
+
+#logging.level.org.hibernate.SQL: DEBUG
+#logging.level.org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+logging.level.org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate: debug

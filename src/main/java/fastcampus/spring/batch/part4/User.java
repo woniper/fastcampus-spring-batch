@@ -1,9 +1,7 @@
-package fastcampus.spring.batch;
+package fastcampus.spring.batch.part4;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import fastcampus.spring.batch.part5.Orders;
+import lombok.*;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -14,6 +12,7 @@ import java.util.Objects;
 @Entity
 @NoArgsConstructor
 @ToString(exclude = "orders")
+@EqualsAndHashCode
 public class User {
 
     @Id
@@ -25,7 +24,8 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Level level = Level.NORMAL;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.PERSIST)
+    @OneToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
     private List<Orders> orders;
 
     private LocalDate updatedDate;
@@ -67,7 +67,7 @@ public class User {
             this.nextLevel = nextLevel;
         }
 
-        public static boolean availableLevelUp(Level level, int totalAmount) {
+        private static boolean availableLevelUp(Level level, int totalAmount) {
             if (Objects.isNull(level)) {
                 return false;
             }
@@ -79,21 +79,26 @@ public class User {
             return totalAmount >= level.nextAmount;
         }
 
-        public static Level getNextLevel(int totalAmount) {
+        private static Level getNextLevel(int totalAmount) {
+//            return Arrays.stream(values())
+//                    .filter(x -> totalAmount >= x.nextAmount)
+//                    .findFirst()
+//                    .map(x -> x.nextLevel)
+//                    .orElse(Level.VIP);
             if (totalAmount >= Level.VIP.nextAmount) {
                 return Level.VIP;
             }
 
             if (totalAmount >= Level.GOLD.nextAmount) {
-                return Level.VIP;
+                return Level.GOLD.nextLevel;
             }
 
             if (totalAmount >= Level.SILVER.nextAmount) {
-                return Level.GOLD;
+                return Level.SILVER.nextLevel;
             }
 
             if (totalAmount >= Level.NORMAL.nextAmount) {
-                return Level.SILVER;
+                return Level.NORMAL.nextLevel;
             }
 
             return Level.NORMAL;
