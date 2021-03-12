@@ -69,14 +69,14 @@ public class UserConfiguration {
                 .listener(new LevelUpJobExecutionListener(userRepository))
                 .next(new JobParametersDecide("date"))
                 .on(JobParametersDecide.CONTINUE.getName())
-                .to(this.orderStatisticsStep(null))
+                .to(this.orderStatisticsStep(null, null))
                 .build()
                 .build();
     }
 
     @Bean(JOB_NAME + "_saveUserStep")
     public Step saveUserStep() {
-    return this.stepBuilderFactory.get(JOB_NAME + "_saveUserStep")
+        return this.stepBuilderFactory.get(JOB_NAME + "_saveUserStep")
                 .tasklet(new SaveUserTasklet(userRepository))
                 .listener(new SaveUserStepExecutionListener(userRepository))
                 .build();
@@ -122,27 +122,29 @@ public class UserConfiguration {
 
     @Bean(JOB_NAME + "_orderStatisticsStep")
     @JobScope
-Step orderStatisticsStep(@Value("#{jobParameters['date']}") String date) throws Exception {
-    return this.stepBuilderFactory.get(JOB_NAME + "_orderStatisticsStep")
-            .<OrderStatistics, OrderStatistics>chunk(CHUNK)
+    Step orderStatisticsStep(@Value("#{jobParameters['date']}") String date,
+                             @Value("#{jobParameters['path']}") String path) throws Exception {
+
+        return this.stepBuilderFactory.get(JOB_NAME + "_orderStatisticsStep")
+                .<OrderStatistics, OrderStatistics>chunk(CHUNK)
                 .reader(orderStatisticsItemReader(date))
-                .writer(orderStatisticsItemWriter(date))
+                .writer(orderStatisticsItemWriter(date, path))
                 .build();
     }
 
-    private ItemWriter<? super OrderStatistics> orderStatisticsItemWriter(String date) throws Exception {
+    private ItemWriter<? super OrderStatistics> orderStatisticsItemWriter(String date, String path) throws Exception {
         YearMonth yearMonth = YearMonth.parse(date);
         String fileName = yearMonth.getYear() + "년_" + yearMonth.getMonthValue() + "월_일별_주문_금액.csv";
 
         BeanWrapperFieldExtractor<OrderStatistics> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(new String[] {"amount", "date"});
+        fieldExtractor.setNames(new String[]{"amount", "date"});
 
         DelimitedLineAggregator<OrderStatistics> lineAggregator = new DelimitedLineAggregator<>();
         lineAggregator.setDelimiter(",");
         lineAggregator.setFieldExtractor(fieldExtractor);
 
         FlatFileItemWriter<OrderStatistics> itemWriter = new FlatFileItemWriterBuilder<OrderStatistics>()
-                .resource(new FileSystemResource("/Users/nhn/dev/fastcampus/fastcampus-spring-batch/" + fileName))
+                .resource(new FileSystemResource(path + fileName))
                 .lineAggregator(lineAggregator)
                 .name(JOB_NAME + "csvFileItemWriter")
                 .encoding("UTF-8")
